@@ -17,6 +17,12 @@ class ObjCheckException(Exception):
 class OutsideStoreRangeException(Exception):
     pass
 
+class FileNotInWorkspaceException(Exception):
+    pass
+
+class NoVersionException(Exception):
+    pass
+
 class Object(object):
 
     modes = {
@@ -69,7 +75,6 @@ class ObjectStore(object):
         self.pit_dir = pit_dir + "/"
         self.obj_dir = self.pit_dir + obj_dir + "/"
         self.index_dir = self.pit_dir + "/" + index
-        self.re_init()
 
     def init(self):
         shutil.rmtree(self.pit_dir, ignore_errors=True)
@@ -99,6 +104,7 @@ class ObjectStore(object):
 
     def store(self, obj):
         self._write(self.obj_dir + self._key_to_path(obj.key), obj.binary)
+        return self
 
     def get(self, key):
         return Object.from_binary(
@@ -130,14 +136,77 @@ class Workspace(object):
     @property
     def yield_files(self):
         for d, _, fs in os.walk(self.objstore.location, topdown=False):
-            print d
             for f in fs:
                 yield os.path.relpath(os.path.join(d, f),
                         self.objstore.location)
 
     def has(self, file_path):
         relpath = os.path.relpath(file_path, self.objstore.location)
-        for f in self.yieldfiles:
+        for f in self.yield_files:
             if relpath == f:
                 return True
         return False
+
+    def get_content(self, file_path):
+        with open(file_path, "r") as f:
+            return f.read()
+
+
+class StagingArea(object):
+
+    line_format = "{mode} {key} {version}    {path}"
+
+    def __init__(self, workspace=None):
+        self.workspace = workspace if workspace else Workspace()
+        self.objstore = self.workspace.objstore
+        self.content = {}
+
+    def relpath(self, file_path):
+        return self.objstore.relpath(file_path)
+
+    def in_workspace(self, path):
+        return self.workspace.has(path)
+
+    def get_version(self, file_path):
+        obj = Object(self.workspace.get_content(file_path))
+        try:
+            for i, version in enumerate(self.content[file_path]):
+                if obj.key == version.key:
+                    return i, version
+        except KeyError:
+            # better raise our own exception instead of KeyError
+            pass
+        raise NoVersionException(file_path)
+
+    def add_object(self, relpath, obj):
+        self.objstore.store(obj)
+        try:
+            self.content[relpath].append(obj)
+            return len(self.content[relpath])-1, obj
+        except KeyError:
+            self.content[relpath] = [obj]
+            return 0, obj
+
+    def add_file(self, file_path):
+        relpath = self.relpath(file_path)
+        if not self.in_workspace(relpath):
+            raise FileNotInWorkspaceException(relpath)
+        try:
+            return self.get_version(relpath)
+        except NoVersionException:
+            return self.add_object(
+                    relpath, Object(self.workspace.get_content(relpath)))
+
+    def remove_file(self, file_path):
+        rel_path = os.path.relpath(file_path, self.objstore.location)
+        del self.content[rel_path]
+        return self
+
+    def __str__(self):
+        return "\n".join([self.line_format.format(
+                    mode=obj.mode,
+                    key=obj.key,
+                    version= str(ver),
+                    path=path
+            ) for path, versions in self.content.items()
+              for ver, obj in enumerate(versions)])
