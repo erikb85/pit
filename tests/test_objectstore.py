@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright 2013, Erik Bernoth <erik.bernoth@gmail.com
+# Copyright 2013, Erik Bernoth <erik.bernoth@gmail.com>
 
 import shutil
 import os
@@ -15,7 +15,7 @@ def clean_objectstore():
 
 @nt.with_setup(None, clean_objectstore)
 def test_add_file():
-    """ add a file and check if it gets stored
+    """ test_objstore: add a file and check if it gets stored
     """
     # set up
     sut = plumbing.ObjectStore(".just_for_testing")

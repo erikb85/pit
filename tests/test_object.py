@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright 2013, Erik Bernoth <erik.bernoth@gmail.com
+# Copyright 2013, Erik Bernoth <erik.bernoth@gmail.com>
 
 import nose.tools as nt
 
 import pit.plumbing as plumbing
 
 def test_add_file():
-    """ create correct string for new Object
+    """ test_object: create correct string for new Object
     """
     # set up
     txt = "test text"
@@ -19,7 +19,7 @@ def test_add_file():
     nt.eq_(expected_out, out)
 
 def test_compare_objs():
-    """ create 2 equal objects and check the comparator
+    """ test_object: create 2 equal objects and check the comparator
     """
     # set up + exec
     sut1 = plumbing.Object()

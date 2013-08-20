@@ -40,3 +40,6 @@ nosetests.xml
 include
 local
 man
+
+# from git maybe?
+*.orig

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright 2013, Erik Bernoth <erik.bernoth@gmail.com
+# Copyright 2013, Erik Bernoth <erik.bernoth@gmail.com>
 
 import shutil
 import sha
