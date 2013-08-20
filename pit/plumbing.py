@@ -14,8 +14,16 @@ class ObjSizeException(Exception):
 class ObjCheckException(Exception):
     pass
 
+class OutsideStoreRangeException(Exception):
+    pass
 
 class Object(object):
+
+    modes = {
+            "blob" : "10644",
+            "tree" : "040000",
+            "commit" : "160000"
+    }
 
     def __init__(self, content="", type_="blob"):
         self.type_ = type_
@@ -23,6 +31,10 @@ class Object(object):
 
     def __str__(self):
         return "{} {}\x00{}".format(self.type_, len(self.content), self.content)
+
+    @property
+    def mode(self):
+        return self.modes[self.type_]
 
     @property
     def binary(self):
@@ -59,7 +71,7 @@ class ObjectStore(object):
         self.index_dir = self.pit_dir + "/" + index
         self.re_init()
 
-    def re_init(self):
+    def init(self):
         shutil.rmtree(self.pit_dir, ignore_errors=True)
         os.mkdir(self.pit_dir)
         os.mkdir(self.obj_dir)
@@ -91,3 +103,20 @@ class ObjectStore(object):
     def get(self, key):
         return Object.from_binary(
                 self._read(self.obj_dir + self._key_to_path(key)), key)
+
+    @property
+    def location(self):
+        try:
+            return self._location
+        except AttributeError:
+            self._location = self.get_location()
+            return self._location
+
+    def get_location(self, path="."):
+        path = os.path.abspath(path)
+        if self.pit_dir[:-1] in os.listdir(path):
+            return path
+        elif path == "/":
+            raise OutsideStoreRangeException()
+        else:
+            return self.get_location(os.path.dirname(path))
