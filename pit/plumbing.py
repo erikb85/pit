@@ -120,3 +120,24 @@ class ObjectStore(object):
             raise OutsideStoreRangeException()
         else:
             return self.get_location(os.path.dirname(path))
+
+
+class Workspace(object):
+
+    def __init__(self, objstore=None):
+        self.objstore = objstore if objstore else ObjectStore()
+
+    @property
+    def yield_files(self):
+        for d, _, fs in os.walk(self.objstore.location, topdown=False):
+            print d
+            for f in fs:
+                yield os.path.relpath(os.path.join(d, f),
+                        self.objstore.location)
+
+    def has(self, file_path):
+        relpath = os.path.relpath(file_path, self.objstore.location)
+        for f in self.yieldfiles:
+            if relpath == f:
+                return True
+        return False
