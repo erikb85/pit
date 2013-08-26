@@ -25,14 +25,11 @@ class NoVersionException(Exception):
 
 class Object(object):
 
-    TYPES = ("data", "list")
-
-    def __init__(self, content="", type_="data"):
-        self.type_ = type_
+    def __init__(self, content=""):
         self.content = content
 
     def __repr__(self):
-        return "{} {}\x00{}".format(self.type_, self.size, self.content)
+        return "{} {}\x00{}".format(type(self).__name__, self.size, self.content)
 
     def __str__(self):
         return repr(self).replace("\x00","\n")
@@ -86,34 +83,31 @@ class Listing(Object):
     def remove_entry(self, name):
         del self.entries[name]
 
-    def walk(self, breadth_first=True):
-        func = self._bf_walk if breadth_first else self._df_walk
-        for i in func():
-            yield i
-
-    def _bf_walk(self):
-        start = (None, self)
+    def walk(self):
+        start = ('', '', self)
         visited = [start]
         queue = [start]
         while queue:
-            name, obj = queue.pop(0)
-            yield name, obj
+            path, name, obj = queue.pop(0)
+            yield path, name, obj
             if isinstance(obj, Listing):
                 for item in obj.entries.items():
                     if item not in visited:
-                        queue.append(item)
-                        visited.append(item)
-
-    def _df_walk(self):
-        # TODO
-        pass
+                        elem = (
+                                path+"/"+name if path and path!="/" else name,
+                                item[0],
+                                item[1],
+                        )
+                        queue.append(elem)
+                        visited.append(elem)
 
     def __str__(self):
         return "\n".join([self.write_line.format(
-                type_ = obj.type_,
+                type_ = type(obj).__name__,
                 key = obj.key,
                 name = name,
             ) for name, obj in self.entries.items()])
+
 
 class ObjectStore(object):
 
