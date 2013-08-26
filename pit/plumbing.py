@@ -155,6 +155,23 @@ class Workspace(object):
 
 class StagingArea(object):
 
+    line_format = "{mode} {key} {version}    {path}"
+    line_regex = re.compile("(?P<mode>\w+)\s(?P<key>\w+)\s(?<version>\w+)\s{4}(?P<path>\w+)")
+
+    @classmethod
+    def from_object(cls, obj, workspace=None):
+        txt = obj.content
+        return cls.from_txt(cls, txt, workspace)
+
+    @classmethod
+    def from_txt(cls, txt, workspace=None):
+        self = StagingArea(workspace)
+        for line in txt.split("\n"):
+            content = cls.line_regex.match(line).groupdict()
+            obj = self.objectstore.get(content["key"])
+            self.add_object(content["path"], obj, stored=True)
+        return self
+
     def __init__(self, workspace=None):
         self.workspace = workspace if workspace else Workspace()
         self.objectstore = self.workspace.objectstore
@@ -177,8 +194,9 @@ class StagingArea(object):
             pass
         raise NoVersionException(file_path)
 
-    def add_object(self, relpath, obj):
-        self.objectstore.store(obj)
+    def add_object(self, relpath, obj, stored=False):
+        if not stored:
+            self.objectstore.store(obj)
         try:
             self.content[relpath].append(obj)
             return len(self.content[relpath])-1, obj
@@ -209,6 +227,12 @@ class StagingArea(object):
                     path=path
             ) for path, versions in self.content.items()
               for ver, obj in enumerate(versions)])
+
+    def store(self, ref_file=None):
+        ref_file = ref_file or self.objectstore.stage
+        obj = Object(str(self), type_="staging")
+        self.objectstore.store(obj)
+        return obj.key
 
 
 class Register(Object):
