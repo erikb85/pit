@@ -208,3 +208,30 @@ class StagingArea(object):
                     path=path
             ) for path, versions in self.content.items()
               for ver, obj in enumerate(versions)])
+
+
+class Register(Object):
+    """ what was once called a "Tree" although it was actually a DAG
+    """
+
+    line_format = "{mode} {type_} {key}    {name}"
+
+    def __init__(self):
+        self._objects = {}
+        self.type_ = "tree"
+
+    def add(self, name, obj):
+        self._objects[name] = obj
+        return self
+
+    def remove(self, name):
+        if name in self._objects:
+            del self._objects[name]
+
+    def __str__(self):
+        return "\n".join([self.line_format.format(
+                    mode=obj.mode,
+                    type_=obj.type_
+                    key=obj.key,
+                    name=name
+            ) for name, obj in self._objects.items()])
