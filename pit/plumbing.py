@@ -130,18 +130,18 @@ class ObjectStore(object):
 
 class Workspace(object):
 
-    def __init__(self, objstore=None):
-        self.objstore = objstore if objstore else ObjectStore()
+    def __init__(self, objectstore=None):
+        self.objectstore = objectstore if objectstore else ObjectStore()
 
     @property
     def yield_files(self):
-        for d, _, fs in os.walk(self.objstore.location, topdown=False):
+        for d, _, fs in os.walk(self.objectstore.location, topdown=False):
             for f in fs:
                 yield os.path.relpath(os.path.join(d, f),
-                        self.objstore.location)
+                        self.objectstore.location)
 
     def has(self, file_path):
-        relpath = os.path.relpath(file_path, self.objstore.location)
+        relpath = os.path.relpath(file_path, self.objectstore.location)
         for f in self.yield_files:
             if relpath == f:
                 return True
@@ -154,15 +154,13 @@ class Workspace(object):
 
 class StagingArea(object):
 
-    line_format = "{mode} {key} {version}    {path}"
-
     def __init__(self, workspace=None):
         self.workspace = workspace if workspace else Workspace()
-        self.objstore = self.workspace.objstore
+        self.objectstore = self.workspace.objectstore
         self.content = {}
 
     def relpath(self, file_path):
-        return self.objstore.relpath(file_path)
+        return self.objectstore.relpath(file_path)
 
     def in_workspace(self, path):
         return self.workspace.has(path)
@@ -179,7 +177,7 @@ class StagingArea(object):
         raise NoVersionException(file_path)
 
     def add_object(self, relpath, obj):
-        self.objstore.store(obj)
+        self.objectstore.store(obj)
         try:
             self.content[relpath].append(obj)
             return len(self.content[relpath])-1, obj
@@ -198,7 +196,7 @@ class StagingArea(object):
                     relpath, Object(self.workspace.get_content(relpath)))
 
     def remove_file(self, file_path):
-        rel_path = os.path.relpath(file_path, self.objstore.location)
+        rel_path = os.path.relpath(file_path, self.objectstore.location)
         del self.content[rel_path]
         return self
 
