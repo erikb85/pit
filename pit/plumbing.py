@@ -260,3 +260,9 @@ class Register(Object):
                     key=obj.key,
                     name=name
             ) for name, obj in self._objects.items()])
+
+
+class Snapshot(object):
+    """ instead of commit
+    """
+    pass
