@@ -28,6 +28,7 @@ class Object(object):
     modes = {
             "blob" : "10644",
             "tree" : "040000",
+            "staging" : "040000",
             "commit" : "160000"
     }
 
@@ -71,10 +72,10 @@ class Object(object):
 
 class ObjectStore(object):
 
-    def __init__(self, pit_dir=".pit", obj_dir="obj", index="INDEX"):
+    def __init__(self, pit_dir=".pit", obj_dir="obj", stage="StageArea"):
         self.pit_dir = pit_dir + "/"
         self.obj_dir = self.pit_dir + obj_dir + "/"
-        self.index_dir = self.pit_dir + "/" + index
+        self.stage = self.pit_dir + "/" + stage
 
     def init(self):
         shutil.rmtree(self.pit_dir, ignore_errors=True)
