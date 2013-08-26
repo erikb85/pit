@@ -25,7 +25,7 @@ class NoVersionException(Exception):
 
 class Object(object):
 
-    TYPES = ("data", "listing")
+    TYPES = ("data", "list")
 
     def __init__(self, content="", type_="data"):
         self.type_ = type_
@@ -35,7 +35,7 @@ class Object(object):
         return "{} {}\x00{}".format(self.type_, self.size, self.content)
 
     def __str__(self):
-        return repr(self).sub("\x00","\n")
+        return repr(self).replace("\x00","\n")
 
     @property
     def size(self):
@@ -70,11 +70,13 @@ class Object(object):
 
 class Listing(Object):
 
+    write_line = "{type_} {key}    {name}"
+
     def __init__(self):
-        self.type_ = "listing"
+        self.type_ = "list"
         self.entries = {}
 
-    @propperty
+    @property
     def content(self):
         return str(self)
 
@@ -84,11 +86,34 @@ class Listing(Object):
     def remove_entry(self, name):
         del self.entries[name]
 
-    def walk(self):
-        # like os.walk, consider that every object could be a Listing itself
+    def walk(self, breadth_first=True):
+        func = self._bf_walk if breadth_first else self._df_walk
+        for i in func():
+            yield i
+
+    def _bf_walk(self):
+        start = (None, self)
+        visited = [start]
+        queue = [start]
+        while queue:
+            name, obj = queue.pop(0)
+            yield name, obj
+            if isinstance(obj, Listing):
+                for item in obj.entries.items():
+                    if item not in visited:
+                        queue.append(item)
+                        visited.append(item)
+
+    def _df_walk(self):
         # TODO
         pass
 
+    def __str__(self):
+        return "\n".join([self.write_line.format(
+                type_ = obj.type_,
+                key = obj.key,
+                name = name,
+            ) for name, obj in self.entries.items()])
 
 class ObjectStore(object):
 
