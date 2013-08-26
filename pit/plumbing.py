@@ -25,26 +25,25 @@ class NoVersionException(Exception):
 
 class Object(object):
 
-    modes = {
-            "blob" : "10644",
-            "tree" : "040000",
-            "commit" : "160000"
-    }
+    TYPES = ("data", "listing")
 
-    def __init__(self, content="", type_="blob"):
+    def __init__(self, content="", type_="data"):
         self.type_ = type_
         self.content = content
 
+    def __repr__(self):
+        return "{} {}\x00{}".format(self.type_, self.size, self.content)
+
     def __str__(self):
-        return "{} {}\x00{}".format(self.type_, len(self.content), self.content)
+        return repr(self).sub("\x00","\n")
 
     @property
-    def mode(self):
-        return self.modes[self.type_]
+    def size(self):
+        return len(self.content)
 
     @property
     def binary(self):
-        return zlib.compress(str(self))
+        return zlib.compress(repr(self))
 
     @property
     def key(self):
@@ -67,6 +66,28 @@ class Object(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+
+class Listing(Object):
+
+    def __init__(self):
+        self.type_ = "listing"
+        self.entries = {}
+
+    @propperty
+    def content(self):
+        return str(self)
+
+    def add_entry(self, name, obj):
+        self.entries[name] = obj
+
+    def remove_entry(self, name):
+        del self.entries[name]
+
+    def walk(self):
+        # like os.walk, consider that every object could be a Listing itself
+        # TODO
+        pass
 
 
 class ObjectStore(object):
